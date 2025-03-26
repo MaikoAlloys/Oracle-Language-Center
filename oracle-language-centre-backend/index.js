@@ -14,6 +14,7 @@ const applicationRoutes = require("./routes/applications");
 const financeRoutes = require("./routes/finance"); // ✅ Added Finance Routes
 const hodRoutes = require("./routes/hod"); // ✅ Added HOD Routes
 const tutorRoutes = require("./routes/tutors"); // ✅ Added Tutor Routes
+const librarianRouter = require("./routes/librarian"); // Import the librarianRouter
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,6 +35,7 @@ const routes = [
   { path: "/finance", route: financeRoutes }, // ✅ Registered Finance Route
   { path: "/hod", route: hodRoutes }, // ✅ Registered HOD Route
   { path: "/tutors", route: tutorRoutes }, // ✅ Registered Tutor Route
+  { path: "/librarian", route: librarianRouter }, // ✅ Registered Librarian Route
 ];
 
 routes.forEach(({ path, route }) => {

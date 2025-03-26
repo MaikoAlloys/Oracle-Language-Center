@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 25, 2025 at 05:37 PM
+-- Generation Time: Mar 26, 2025 at 06:57 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -189,8 +189,19 @@ INSERT INTO `learning_resources` (`id`, `course_id`, `resource_name`, `created_a
 
 CREATE TABLE `librarians` (
   `id` int(11) NOT NULL,
-  `name` varchar(100) NOT NULL
+  `username` varchar(50) NOT NULL,
+  `first_name` varchar(50) NOT NULL,
+  `last_name` varchar(50) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `librarians`
+--
+
+INSERT INTO `librarians` (`id`, `username`, `first_name`, `last_name`, `email`, `password`) VALUES
+(1, 'Lanoi', 'Derrick', 'Lanoi', 'derricklanoi@gmail.com', '$2b$10$9JysdLh35QjSKAOIInuhwub1NnXmrdb9zFhQTc8dnqOh/ySXm5viy');
 
 -- --------------------------------------------------------
 
@@ -234,8 +245,17 @@ CREATE TABLE `resource_requests` (
   `requested_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `librarian_submitted` tinyint(1) DEFAULT 0,
   `student_confirmed` tinyint(1) DEFAULT 0,
-  `resource_id` int(11) NOT NULL
+  `resource_id` int(11) NOT NULL,
+  `status` enum('requested','submitted') NOT NULL DEFAULT 'requested'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `resource_requests`
+--
+
+INSERT INTO `resource_requests` (`id`, `student_id`, `course_id`, `requested_at`, `librarian_submitted`, `student_confirmed`, `resource_id`, `status`) VALUES
+(33, 3, 1, '2025-03-26 14:27:17', 1, 0, 3, 'submitted'),
+(36, 3, 1, '2025-03-26 17:53:57', 1, 1, 1, 'submitted');
 
 -- --------------------------------------------------------
 
@@ -396,7 +416,9 @@ ALTER TABLE `learning_resources`
 -- Indexes for table `librarians`
 --
 ALTER TABLE `librarians`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `username` (`username`),
+  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexes for table `payments`
@@ -411,8 +433,8 @@ ALTER TABLE `payments`
 --
 ALTER TABLE `resource_requests`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `student_id` (`student_id`),
-  ADD KEY `course_id` (`course_id`);
+  ADD KEY `course_id` (`course_id`),
+  ADD KEY `fk_student_id` (`student_id`);
 
 --
 -- Indexes for table `storekeepers`
@@ -494,7 +516,7 @@ ALTER TABLE `learning_resources`
 -- AUTO_INCREMENT for table `librarians`
 --
 ALTER TABLE `librarians`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `payments`
@@ -506,7 +528,7 @@ ALTER TABLE `payments`
 -- AUTO_INCREMENT for table `resource_requests`
 --
 ALTER TABLE `resource_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- AUTO_INCREMENT for table `storekeepers`
@@ -565,7 +587,7 @@ ALTER TABLE `payments`
 -- Constraints for table `resource_requests`
 --
 ALTER TABLE `resource_requests`
-  ADD CONSTRAINT `resource_requests_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_student_id` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `resource_requests_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE;
 
 --

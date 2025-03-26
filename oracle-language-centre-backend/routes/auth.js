@@ -208,6 +208,46 @@ router.post("/tutors/login", async (req, res) => {
     }
 });
 
+// ✅ Librarian Login API
+router.post("/librarian/login", async (req, res) => {
+    const { username, password } = req.body;
 
+    if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+    }
+
+    try {
+        db.query("SELECT * FROM librarians WHERE username = ?", [username], async (err, results) => {
+            if (err) return res.status(500).json({ message: "Database error", error: err });
+
+            if (results.length === 0) {
+                return res.status(400).json({ message: "User not found" });
+            }
+
+            const librarian = results[0];
+
+            const isMatch = await bcrypt.compare(password, librarian.password);
+            if (!isMatch) {
+                return res.status(401).json({ message: "Invalid credentials" });
+            }
+
+            const token = jwt.sign(
+                { id: librarian.id, role: "librarian" },
+                process.env.JWT_SECRET,
+                { expiresIn: "1d" }
+            );
+
+            console.log("✅ Token Generated:", token);
+
+            res.json({
+                message: "Login successful",
+                token,
+                librarian: { id: librarian.id, username: librarian.username }
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+    }
+});
 
 module.exports = router;
