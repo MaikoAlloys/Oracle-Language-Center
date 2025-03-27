@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 26, 2025 at 06:57 PM
+-- Generation Time: Mar 27, 2025 at 08:10 PM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.0.30
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -215,9 +215,9 @@ CREATE TABLE `payments` (
   `course_id` int(11) NOT NULL,
   `payment_method` enum('mpesa','bank') NOT NULL,
   `reference_code` varchar(14) NOT NULL,
-  `location` varchar(255) NOT NULL,
-  `birth_year` int(11) NOT NULL,
-  `id_number` varchar(20) NOT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `birth_year` int(11) DEFAULT NULL,
+  `id_number` varchar(20) DEFAULT NULL,
   `status` enum('pending','approved') DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `amount_paid` decimal(10,2) NOT NULL DEFAULT 0.00
@@ -230,7 +230,11 @@ CREATE TABLE `payments` (
 INSERT INTO `payments` (`id`, `student_id`, `course_id`, `payment_method`, `reference_code`, `location`, `birth_year`, `id_number`, `status`, `created_at`, `amount_paid`) VALUES
 (1, 3, 1, 'mpesa', '12345Df54Q', 'Nairobi ', 2002, '40217945', 'approved', '2025-03-21 06:27:31', 2500.00),
 (2, 3, 2, 'mpesa', 'Qwerty23qw', 'Nairobi ', 2002, '40217945', 'pending', '2025-03-21 08:30:28', 3000.00),
-(3, 4, 10, 'bank', 'Qwert1234qwert', 'Meru', 20002, '40217945', 'approved', '2025-03-21 08:46:01', 4000.00);
+(3, 4, 10, 'bank', 'Qwert1234qwert', 'Meru', 20002, '40217945', 'approved', '2025-03-21 08:46:01', 4000.00),
+(4, 3, 13, 'mpesa', 'Qwert2346q', 'Nairobi ', 2002, '40217525', 'pending', '2025-03-27 15:26:41', 3750.00),
+(5, 3, 1, 'mpesa', 'ABC123XYZ9', NULL, NULL, NULL, 'approved', '2025-03-27 16:07:45', 2000.00),
+(6, 4, 10, 'mpesa', 'QWERT54RT4', NULL, NULL, NULL, 'pending', '2025-03-27 18:42:25', 2.00),
+(7, 4, 10, 'mpesa', 'QWERT3421R', NULL, NULL, NULL, 'pending', '2025-03-27 18:44:19', 2.00);
 
 -- --------------------------------------------------------
 
@@ -255,7 +259,8 @@ CREATE TABLE `resource_requests` (
 
 INSERT INTO `resource_requests` (`id`, `student_id`, `course_id`, `requested_at`, `librarian_submitted`, `student_confirmed`, `resource_id`, `status`) VALUES
 (33, 3, 1, '2025-03-26 14:27:17', 1, 0, 3, 'submitted'),
-(36, 3, 1, '2025-03-26 17:53:57', 1, 1, 1, 'submitted');
+(36, 3, 1, '2025-03-26 17:53:57', 1, 1, 1, 'submitted'),
+(37, 4, 10, '2025-03-27 17:58:51', 0, 0, 28, 'requested');
 
 -- --------------------------------------------------------
 
@@ -284,6 +289,27 @@ CREATE TABLE `students` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `student_attendance`
+--
+
+CREATE TABLE `student_attendance` (
+  `id` int(11) NOT NULL,
+  `student_id` int(11) NOT NULL,
+  `tutor_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  `attended_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `student_attendance`
+--
+
+INSERT INTO `student_attendance` (`id`, `student_id`, `tutor_id`, `course_id`, `attended_at`) VALUES
+(8, 3, 1, 1, '2025-03-27 12:54:08');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `student_tutors`
 --
 
@@ -302,7 +328,7 @@ CREATE TABLE `student_tutors` (
 
 INSERT INTO `student_tutors` (`id`, `student_id`, `tutor_id`, `assigned_at`, `status`, `course_id`) VALUES
 (29, 4, 3, '2025-03-23 15:49:48', 'in_progress', 10),
-(31, 3, 1, '2025-03-24 06:37:50', 'in_progress', 1);
+(31, 3, 1, '2025-03-24 06:37:50', 'completed', 1);
 
 -- --------------------------------------------------------
 
@@ -366,7 +392,7 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `first_name`, `last_name`, `email`, `phone`, `password`, `is_approved`, `role`, `created_at`) VALUES
 (1, 'test_user', 'Test', 'User', 'test@example.com', '0712345678', 'hashedpassword123', 1, 'student', '2025-03-20 05:02:27'),
-(2, 'Alloys', 'Alloys', 'Maiko', 'maikoa052@gmail.com', '0796901211', '$2b$10$S/YgzeSianpcRpRqNahUnemb52azWhl0scaflXBVKJim5kQshafPK', 1, 'student', '2025-03-20 05:11:25'),
+(2, 'Alloys', 'Alloys', 'Maiko', 'maikoa052@gmail.com', '0796901211', '$2b$10$mY29jNBM8oxlP7t6Mbtx4eW2Kcj4i/J.G95SENi8zc4tEZjumCWui', 1, 'student', '2025-03-20 05:11:25'),
 (3, 'Phoebe ', 'Phoebe', 'Siaka', 'phoebensiaka@gmail.com', '0745022309', '$2b$10$OpRKu6TL9V0p/d0sFTOam.uIQ4LapW.kLN50WoJ3g0HSaSBIRiYzu', 1, 'student', '2025-03-20 05:36:33'),
 (4, 'Alex', 'Alex', 'Maiko', 'Alexmaikogmail.com', '0796901211', '$2b$10$sH/9VMxG1/OwnSYgblyeN.ANiSDsyHP1uVp5Q.Mq3ITPo9BeO2oRu', 1, 'student', '2025-03-20 10:01:44'),
 (5, 'Chris ', 'Chris ', 'Maiko', 'Puritysiaka@gmail.com', '0745022309', '$2b$10$BUeNvmnpL8qzpwFo/gS36ej/wVdZvBz1RZ5x1L5csnU6QcPjcGXi2', 1, 'student', '2025-03-20 10:57:01'),
@@ -449,6 +475,15 @@ ALTER TABLE `students`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `student_attendance`
+--
+ALTER TABLE `student_attendance`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `student_id` (`student_id`),
+  ADD KEY `tutor_id` (`tutor_id`),
+  ADD KEY `course_id` (`course_id`);
+
+--
 -- Indexes for table `student_tutors`
 --
 ALTER TABLE `student_tutors`
@@ -522,13 +557,13 @@ ALTER TABLE `librarians`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `resource_requests`
 --
 ALTER TABLE `resource_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `storekeepers`
@@ -541,6 +576,12 @@ ALTER TABLE `storekeepers`
 --
 ALTER TABLE `students`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `student_attendance`
+--
+ALTER TABLE `student_attendance`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `student_tutors`
@@ -589,6 +630,14 @@ ALTER TABLE `payments`
 ALTER TABLE `resource_requests`
   ADD CONSTRAINT `fk_student_id` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `resource_requests_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `student_attendance`
+--
+ALTER TABLE `student_attendance`
+  ADD CONSTRAINT `student_attendance_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `student_attendance_ibfk_2` FOREIGN KEY (`tutor_id`) REFERENCES `tutors` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `student_attendance_ibfk_3` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `student_tutors`

@@ -100,15 +100,17 @@ router.put("/mark-in-progress/:studentId", authenticateTutor, (req, res) => {
     });
 });
 
-// ✅ Route to fetch students in progress with their assigned tutor
+// ✅ Route to fetch students in progress with their assigned tutor and course name
 router.get("/students-in-progress", (req, res) => {
     const query = `
         SELECT u.id, u.username, u.first_name, u.last_name, u.email, u.phone, 
                st.status, t.id AS tutor_id, t.username AS tutor_username, 
-               t.firstname AS tutor_firstname, t.lastname AS tutor_lastname
+               t.firstname AS tutor_firstname, t.lastname AS tutor_lastname,
+               c.name AS course_name
         FROM student_tutors st
         JOIN users u ON st.student_id = u.id
         LEFT JOIN tutors t ON st.tutor_id = t.id
+        LEFT JOIN courses c ON st.course_id = c.id  -- Join with courses table to get course name
         WHERE st.status = 'in_progress'
     `;
 
@@ -141,5 +143,82 @@ router.get("/:id", (req, res) => {
         res.json(results[0]); // ✅ Return tutor details
     });
 });
+// ✅ Fetch students in progress assigned to a specific tutor
+router.get("/in-progress-students/:tutorId", (req, res) => {
+    const tutorId = req.params.tutorId; // Get tutor ID from URL
+
+    console.log(`✅ Fetching students learning in progress for Tutor ID: ${tutorId}`);
+
+    const query = `
+        SELECT 
+            st.id AS assignment_id,
+            u.id AS student_id,
+            u.first_name,
+            u.last_name,
+            c.name AS course_name,
+            st.assigned_at
+        FROM student_tutors st
+        JOIN users u ON st.student_id = u.id
+        JOIN courses c ON st.course_id = c.id
+        WHERE st.tutor_id = ? AND st.status = 'in_progress'
+        ORDER BY st.assigned_at DESC
+    `;
+
+    db.query(query, [tutorId], (err, results) => {
+        if (err) {
+            console.error("❌ Database Error:", err);
+            return res.status(500).json({ message: "Database error" });
+        }
+
+        console.log(`✅ Found ${results.length} students for Tutor ID ${tutorId}`, results);
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: "No students found in progress." });
+        }
+
+        res.json(results);
+    });
+});
+
+
+// ✅ Mark Student Learning as "Completed"
+router.put("/mark-completed/:studentId", authenticateTutor, (req, res) => {
+    const tutorId = req.user.id; // Tutor ID from authentication middleware
+    const studentId = req.params.studentId;
+
+    // Check if the tutor is assigned to this student and learning is in progress
+    const queryCheck = `
+        SELECT * FROM student_tutors 
+        WHERE student_id = ? AND tutor_id = ? AND status = 'in_progress'
+    `;
+
+    db.query(queryCheck, [studentId, tutorId], (err, results) => {
+        if (err) {
+            console.error("❌ Database Error:", err);
+            return res.status(500).json({ message: "Internal server error." });
+        }
+
+        if (results.length === 0) {
+            return res.status(403).json({ message: "You are not assigned to this student or student is not in progress." });
+        }
+
+        // Update status to 'completed'
+        const queryUpdate = `
+            UPDATE student_tutors 
+            SET status = 'completed' 
+            WHERE student_id = ? AND tutor_id = ?
+        `;
+
+        db.query(queryUpdate, [studentId, tutorId], (err) => {
+            if (err) {
+                console.error("❌ Database Error:", err);
+                return res.status(500).json({ message: "Internal server error." });
+            }
+
+            res.json({ message: "Student learning marked as 'Completed'." });
+        });
+    });
+});
+
 
 module.exports = router;

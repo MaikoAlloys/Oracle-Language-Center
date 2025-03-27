@@ -75,18 +75,20 @@ router.get("/applicant-details/:payment_id", authenticateFinance, (req, res) => 
             u.phone, 
             c.name AS course_name, 
             c.fee AS total_fee, 
-            p.amount_paid, 
-            (c.fee - p.amount_paid) AS balance, 
-            p.payment_method, 
-            p.reference_code, 
-            p.status, 
-            p.id AS payment_id 
+            SUM(p.amount_paid) AS amount_paid, 
+            (c.fee - SUM(p.amount_paid)) AS balance, 
+            MAX(p.payment_method) AS payment_method, 
+            MAX(p.reference_code) AS reference_code, 
+            MAX(p.status) AS status, 
+            MAX(p.id) AS payment_id 
         FROM payments p
         JOIN users u ON p.student_id = u.id
         JOIN courses c ON p.course_id = c.id
-        WHERE p.id = ?`;
+        WHERE p.student_id = (SELECT student_id FROM payments WHERE id = ?) 
+        AND p.course_id = (SELECT course_id FROM payments WHERE id = ?)
+        GROUP BY p.course_id, u.id`;
 
-    db.query(query, [payment_id], (err, results) => {
+    db.query(query, [payment_id, payment_id], (err, results) => {
         if (err) {
             console.error("❌ Database Error:", err);
             return res.status(500).json({ message: "Database error" });
@@ -98,17 +100,37 @@ router.get("/applicant-details/:payment_id", authenticateFinance, (req, res) => 
     });
 });
 
+
 // ✅ Approve Payment
+// router.put("/approve-payment/:payment_id", authenticateFinance, (req, res) => {
+//     const { payment_id } = req.params;
+
+//     db.query(
+//         "UPDATE payments SET status = 'approved' WHERE id = ?", 
+//         [payment_id], 
+//         (err, result) => {
+//             if (err) {
+//                 console.error("❌ Database Error:", err);
+//                 return res.status(500).json({ message: "Database error" });
+//             }
+//             res.json({ message: "✅ Payment approved successfully!" });
+//         }
+//     );
+// });
+
 router.put("/approve-payment/:payment_id", authenticateFinance, (req, res) => {
     const { payment_id } = req.params;
 
     db.query(
-        "UPDATE payments SET status = 'approved' WHERE id = ?", 
+        "UPDATE payments SET status = 'approved' WHERE id = ? AND status != 'approved'", 
         [payment_id], 
         (err, result) => {
             if (err) {
                 console.error("❌ Database Error:", err);
                 return res.status(500).json({ message: "Database error" });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(400).json({ message: "Payment not found or already approved." });
             }
             res.json({ message: "✅ Payment approved successfully!" });
         }
@@ -162,5 +184,7 @@ router.get("/:financeId", (req, res) => {
         }
     );
 });
+
+
 
 module.exports = router;

@@ -310,6 +310,93 @@ router.get('/resource-details/:studentId/:resourceId', (req, res) => {
         }
     });
 });
+// Student marking attendance
+router.post('/mark-attendance', async (req, res) => {
+    const { studentId } = req.body;  // Only studentId is required from frontend
+
+    if (!studentId) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Missing studentId' 
+        });
+    }
+
+    try {
+        // Ensure studentId is a number
+        if (isNaN(studentId)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Student ID must be a number' 
+            });
+        }
+
+        // Fetch active tutorId and courseId for this student
+        const getActiveSessionQuery = `
+            SELECT 
+                st.course_id, 
+                st.tutor_id, 
+                c.name AS course_name
+            FROM student_tutors st
+            JOIN courses c ON st.course_id = c.id
+            WHERE st.student_id = ? 
+            AND st.status = 'in_progress'
+            LIMIT 1
+        `;
+
+        const [session] = await db.promise().query(getActiveSessionQuery, [studentId]);
+
+        if (session.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'No active session found for this student' 
+            });
+        }
+
+        const { tutor_id, course_id, course_name } = session[0];
+
+        // Check if attendance already exists today
+        const checkExistingQuery = `
+            SELECT id FROM student_attendance 
+            WHERE student_id = ? AND tutor_id = ? AND course_id = ?
+            AND DATE(attended_at) = CURDATE()
+        `;
+
+        const [existing] = await db.promise().query(checkExistingQuery, 
+            [studentId, tutor_id, course_id]);
+
+        if (existing.length > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Attendance already marked for today' 
+            });
+        }
+
+        // Insert attendance record
+        const insertQuery = `
+            INSERT INTO student_attendance 
+            (student_id, tutor_id, course_id, attended_at)
+            VALUES (?, ?, ?, NOW())
+        `;
+
+        await db.promise().query(insertQuery, 
+            [studentId, tutor_id, course_id]);
+
+        res.json({ 
+            success: true, 
+            message: 'Attendance marked successfully',
+            courseName: course_name,
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('❌ Error marking attendance:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Internal Server Error',
+            error: error.message 
+        });
+    }
+});
 
 
 module.exports = router;
