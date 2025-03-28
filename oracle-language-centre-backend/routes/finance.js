@@ -63,11 +63,26 @@ router.get("/new-applicants", authenticateFinance, (req, res) => {
     });
 });
 
-// ✅ Fetch Applicant Payment Details
+// ✅ Fetch Latest Applicant Payment Details
 router.get("/applicant-details/:payment_id", authenticateFinance, (req, res) => {
     const { payment_id } = req.params;
 
     const query = `
+        WITH LatestPayment AS (
+            SELECT 
+                p.student_id, 
+                p.course_id, 
+                p.payment_method, 
+                p.reference_code, 
+                p.status, 
+                p.amount_paid,  -- ✅ Fetch latest amount paid
+                p.id AS latest_payment_id 
+            FROM payments p
+            WHERE p.student_id = (SELECT student_id FROM payments WHERE id = ?) 
+            AND p.course_id = (SELECT course_id FROM payments WHERE id = ?)
+            ORDER BY p.created_at DESC
+            LIMIT 1
+        )
         SELECT 
             u.first_name, 
             u.last_name, 
@@ -77,18 +92,21 @@ router.get("/applicant-details/:payment_id", authenticateFinance, (req, res) => 
             c.fee AS total_fee, 
             SUM(p.amount_paid) AS amount_paid, 
             (c.fee - SUM(p.amount_paid)) AS balance, 
-            MAX(p.payment_method) AS payment_method, 
-            MAX(p.reference_code) AS reference_code, 
-            MAX(p.status) AS status, 
-            MAX(p.id) AS payment_id 
+            lp.payment_method AS latest_payment_method, 
+            lp.reference_code AS latest_reference_code, 
+            lp.status AS latest_status, 
+            lp.amount_paid AS latest_amount_paid,  -- ✅ Include latest amount paid
+            lp.latest_payment_id AS latest_payment_id
         FROM payments p
         JOIN users u ON p.student_id = u.id
         JOIN courses c ON p.course_id = c.id
+        JOIN LatestPayment lp ON p.student_id = lp.student_id AND p.course_id = lp.course_id
         WHERE p.student_id = (SELECT student_id FROM payments WHERE id = ?) 
         AND p.course_id = (SELECT course_id FROM payments WHERE id = ?)
-        GROUP BY p.course_id, u.id`;
+        GROUP BY p.course_id, u.id, lp.payment_method, lp.reference_code, lp.status, lp.amount_paid, lp.latest_payment_id;
+    `;
 
-    db.query(query, [payment_id, payment_id], (err, results) => {
+    db.query(query, [payment_id, payment_id, payment_id, payment_id], (err, results) => {
         if (err) {
             console.error("❌ Database Error:", err);
             return res.status(500).json({ message: "Database error" });

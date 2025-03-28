@@ -72,3 +72,8 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
+// ✅ Serve Certificates Folder
+const path = require("path");
+app.use("/certificates", express.static(path.join(__dirname, "certificates")));
+console.log("✅ Serving certificates from /certificates");
